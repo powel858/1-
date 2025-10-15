@@ -1,0 +1,292 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+	1F1A0C1F2C2E3A6B00AA1120 /* IntentZeroDebugAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A0C122C2E3A6B00AA1120 /* IntentZeroDebugAppApp.swift */; };
+	1F1A0C202C2E3A6B00AA1120 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A0C132C2E3A6B00AA1120 /* ContentView.swift */; };
+	1F1A0C212C2E3A6B00AA1120 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A0C182C2E3A6B00AA1120 /* ChatViewModel.swift */; };
+	1F1A0C222C2E3A6B00AA1120 /* IntentPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A0C192C2E3A6B00AA1120 /* IntentPipeline.swift */; };
+	1F1A0C232C2E3A6B00AA1120 /* LLMClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1A0C1A2C2E3A6B00AA1120 /* LLMClient.swift */; };
+	1F3B2D012E0AABCD00AA1200 /* SendableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F3B2D002E0AABCD00AA1200 /* SendableTextView.swift */; };
+	1F1A0C252C2E3A6B00AA1120 /* IntentAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1F1A0C1B2C2E3A6B00AA1120 /* IntentAssets.xcassets */; };
+	1F1A0C262C2E3A6B00AA1120 /* IntentZeroDebugService.zip in Resources */ = {isa = PBXBuildFile; fileRef = 1F1A0C1C2C2E3A6B00AA1120 /* IntentZeroDebugService.zip */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+	1F1A0C122C2E3A6B00AA1120 /* IntentZeroDebugAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentZeroDebugAppApp.swift; sourceTree = "<group>"; };
+	1F1A0C132C2E3A6B00AA1120 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+	1F1A0C182C2E3A6B00AA1120 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+	1F1A0C192C2E3A6B00AA1120 /* IntentPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentPipeline.swift; sourceTree = "<group>"; };
+	1F1A0C1A2C2E3A6B00AA1120 /* LLMClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClient.swift; sourceTree = "<group>"; };
+	1F1A0C1B2C2E3A6B00AA1120 /* IntentAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/IntentAssets.xcassets; sourceTree = "<group>"; };
+	1F1A0C1C2C2E3A6B00AA1120 /* IntentZeroDebugService.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/IntentZeroDebugService.zip; sourceTree = "<group>"; };
+	1F1A0C1D2C2E3A6B00AA1120 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+	1F1A0C1E2C2E3A6B00AA1120 /* IntentZeroDebugApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IntentZeroDebugApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+	1F3B2D002E0AABCD00AA1200 /* SendableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendableTextView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+	1F1A0C0E2C2E3A6B00AA1120 /* Frameworks */ = {
+		isa = PBXFrameworksBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+	1F1A0C062C2E3A6B00AA1120 = {
+		isa = PBXGroup;
+		children = (
+			1F1A0C112C2E3A6B00AA1120 /* IntentZeroDebugApp */,
+			1F1A0C1E2C2E3A6B00AA1120 /* IntentZeroDebugApp.app */
+		);
+		sourceTree = "<group>";
+	};
+	1F1A0C112C2E3A6B00AA1120 /* IntentZeroDebugApp */ = {
+		isa = PBXGroup;
+		children = (
+			1F1A0C142C2E3A6B00AA1120 /* Sources */,
+			1F1A0C1B2C2E3A6B00AA1120 /* IntentAssets.xcassets */,
+			1F1A0C1C2C2E3A6B00AA1120 /* IntentZeroDebugService.zip */,
+			1F1A0C1D2C2E3A6B00AA1120 /* Info.plist */
+		);
+		path = IntentZeroDebugApp;
+		sourceTree = "<group>";
+	};
+	1F1A0C142C2E3A6B00AA1120 /* Sources */ = {
+		isa = PBXGroup;
+		children = (
+			1F1A0C122C2E3A6B00AA1120 /* IntentZeroDebugAppApp.swift */,
+			1F1A0C132C2E3A6B00AA1120 /* ContentView.swift */,
+			1F3B2D022E0AABCD00AA1200 /* Views */,
+			1F1A0C172C2E3A6B00AA1120 /* ViewModels */,
+			1F1A0C162C2E3A6B00AA1120 /* Services */
+		);
+		sourceTree = "<group>";
+	};
+	1F3B2D022E0AABCD00AA1200 /* Views */ = {
+		isa = PBXGroup;
+		children = (
+			1F3B2D002E0AABCD00AA1200 /* SendableTextView.swift */
+		);
+		path = Views;
+		sourceTree = "<group>";
+	};
+	1F1A0C162C2E3A6B00AA1120 /* Services */ = {
+		isa = PBXGroup;
+		children = (
+			1F1A0C192C2E3A6B00AA1120 /* IntentPipeline.swift */,
+			1F1A0C1A2C2E3A6B00AA1120 /* LLMClient.swift */
+		);
+		path = Services;
+		sourceTree = "<group>";
+	};
+	1F1A0C172C2E3A6B00AA1120 /* ViewModels */ = {
+		isa = PBXGroup;
+		children = (
+			1F1A0C182C2E3A6B00AA1120 /* ChatViewModel.swift */
+		);
+		path = ViewModels;
+		sourceTree = "<group>";
+	};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+	1F1A0C0D2C2E3A6B00AA1120 /* IntentZeroDebugApp */ = {
+		isa = PBXNativeTarget;
+		buildConfigurationList = 1F1A0C2C2C2E3A6B00AA1121 /* Build configuration list for PBXNativeTarget \"IntentZeroDebugApp\" */;
+		buildPhases = (
+			1F1A0C0C2C2E3A6B00AA1120 /* Sources */,
+			1F1A0C0F2C2E3A6B00AA1120 /* Resources */,
+			1F1A0C0E2C2E3A6B00AA1120 /* Frameworks */
+		);
+		buildRules = (
+		);
+		dependencies = (
+		);
+		name = IntentZeroDebugApp;
+		productName = IntentZeroDebugApp;
+		productReference = 1F1A0C1E2C2E3A6B00AA1120 /* IntentZeroDebugApp.app */;
+		productType = "com.apple.product-type.application";
+	};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+	1F1A0C072C2E3A6B00AA1120 /* Project object */ = {
+		isa = PBXProject;
+		attributes = {
+			LastSwiftUpdateCheck = 1500;
+			LastUpgradeCheck = 1500;
+			ORGANIZATIONNAME = Example;
+			TargetAttributes = {
+				1F1A0C0D2C2E3A6B00AA1120 = {
+					CreatedOnToolsVersion = 15.0;
+					ProvisioningStyle = Automatic;
+				};
+			};
+		};
+		buildConfigurationList = 1F1A0C082C2E3A6B00AA1120 /* Build configuration list for PBXProject */;
+		compatibilityVersion = "Xcode 14.0";
+		developmentRegion = en;
+		hasScannedForEncodings = 0;
+		knownRegions = (
+			en,
+			Base,
+		);
+		mainGroup = 1F1A0C062C2E3A6B00AA1120;
+		productRefGroup = 1F1A0C112C2E3A6B00AA1120 /* IntentZeroDebugApp */;
+		projectDirPath = "";
+		projectRoot = "";
+		targets = (
+			1F1A0C0D2C2E3A6B00AA1120 /* IntentZeroDebugApp */
+		);
+	};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+	1F1A0C0F2C2E3A6B00AA1120 /* Resources */ = {
+		isa = PBXResourcesBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+			1F1A0C252C2E3A6B00AA1120 /* IntentAssets.xcassets in Resources */,
+			1F1A0C262C2E3A6B00AA1120 /* IntentZeroDebugService.zip in Resources */
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+	1F1A0C0C2C2E3A6B00AA1120 /* Sources */ = {
+		isa = PBXSourcesBuildPhase;
+		buildActionMask = 2147483647;
+		files = (
+			1F1A0C1F2C2E3A6B00AA1120 /* IntentZeroDebugAppApp.swift in Sources */,
+			1F1A0C202C2E3A6B00AA1120 /* ContentView.swift in Sources */,
+			1F1A0C212C2E3A6B00AA1120 /* ChatViewModel.swift in Sources */,
+			1F1A0C222C2E3A6B00AA1120 /* IntentPipeline.swift in Sources */,
+			1F1A0C232C2E3A6B00AA1120 /* LLMClient.swift in Sources */,
+			1F3B2D012E0AABCD00AA1200 /* SendableTextView.swift in Sources */
+		);
+		runOnlyForDeploymentPostprocessing = 0;
+	};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+	1F1A0C092C2E3A6B00AA1120 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			APPLICATION_EXTENSION_API_ONLY = NO;
+			CLANG_ENABLE_MODULES = YES;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_PREVIEWS = YES;
+			INFOPLIST_FILE = IntentZeroDebugApp/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+			LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+			MACOSX_DEPLOYMENT_TARGET = 13.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.example.IntentZeroDebugApp;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = macosx;
+			SWIFT_VERSION = 5.0;
+			TARGETED_DEVICE_FAMILY = 1;
+		};
+		name = Debug;
+	};
+	1F1A0C0A2C2E3A6B00AA1120 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			APPLICATION_EXTENSION_API_ONLY = NO;
+			CLANG_ENABLE_MODULES = YES;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_PREVIEWS = YES;
+			INFOPLIST_FILE = IntentZeroDebugApp/Info.plist;
+			IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+			LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+			MACOSX_DEPLOYMENT_TARGET = 13.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.example.IntentZeroDebugApp;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = macosx;
+			SWIFT_VERSION = 5.0;
+			TARGETED_DEVICE_FAMILY = 1;
+		};
+		name = Release;
+	};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+	1F1A0C082C2E3A6B00AA1120 /* Build configuration list for PBXProject */ = {
+		isa = XCConfigurationList;
+		buildConfigurations = (
+			1F1A0C092C2E3A6B00AA1120 /* Debug */,
+			1F1A0C0A2C2E3A6B00AA1120 /* Release */
+		);
+		defaultConfigurationIsVisible = 0;
+		defaultConfigurationName = Debug;
+	};
+	1F1A0C2A2C2E3A6B00AA1120 /* Debug */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_PREVIEWS = YES;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = IntentZeroDebugApp/Info.plist;
+			LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+			MACOSX_DEPLOYMENT_TARGET = 13.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.example.IntentZeroDebugApp;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = macosx;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Debug;
+	};
+	1F1A0C2B2C2E3A6B00AA1120 /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_STYLE = Automatic;
+			CURRENT_PROJECT_VERSION = 1;
+			DEVELOPMENT_TEAM = "";
+			ENABLE_PREVIEWS = YES;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = IntentZeroDebugApp/Info.plist;
+			LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+			MACOSX_DEPLOYMENT_TARGET = 13.0;
+			MARKETING_VERSION = 1.0;
+			PRODUCT_BUNDLE_IDENTIFIER = com.example.IntentZeroDebugApp;
+			PRODUCT_NAME = "$(TARGET_NAME)";
+			SDKROOT = macosx;
+			SWIFT_VERSION = 5.0;
+		};
+		name = Release;
+	};
+	1F1A0C2C2C2E3A6B00AA1121 /* Build configuration list for PBXNativeTarget "IntentZeroDebugApp" */ = {
+		isa = XCConfigurationList;
+		buildConfigurations = (
+			1F1A0C2A2C2E3A6B00AA1120 /* Debug */,
+			1F1A0C2B2C2E3A6B00AA1120 /* Release */
+		);
+		defaultConfigurationIsVisible = 0;
+		defaultConfigurationName = Debug;
+	};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = 1F1A0C072C2E3A6B00AA1120 /* Project object */;
+}

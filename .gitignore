@@ -1,0 +1,14 @@
+# Build artifacts
+build.log
+DerivedData/
+*.build/
+
+# Xcode state
+xcuserdata/
+*.xcuserstate
+
+# Generated binaries
+Tests/bin/
+
+# macOS noise
+.DS_Store
