@@ -8,7 +8,6 @@ import UIKit
 struct ContentView: View {
     @EnvironmentObject private var viewModel: ChatViewModel
     @State private var initialIdeaDraft: String = ""
-    @State private var freeTextDraft: String = ""
     @State private var selectedMilestoneKey: String?
     @State private var pendingScrollTarget: UUID?
 
@@ -29,7 +28,7 @@ struct ContentView: View {
         .onAppear { viewModel.bootstrapIfNeeded() }
         .onChange(of: viewModel.session?.currentQuestion?.key) { key in
             selectedMilestoneKey = key
-            freeTextDraft = ""
+            viewModel.currentFreeText = ""
         }
         .onChange(of: viewModel.milestones.count) { count in
             if count == 0 {
@@ -277,16 +276,15 @@ struct ContentView: View {
             }
             Divider()
             QuestionInputPanel(state: viewModel.currentQuestionState,
-                               freeText: $freeTextDraft,
+                               freeText: $viewModel.currentFreeText,
                                isBusy: viewModel.isBusy,
                                onToggle: { viewModel.toggleCurrentOption($0) },
                                onOtherChange: { viewModel.updateCurrentOtherText($0) },
                                onSubmitSelection: {
                                    viewModel.submitCurrentSelection()
                                },
-                               onSubmitFreeText: { text in
-                                   viewModel.submitFreeTextResponse(text)
-                                   freeTextDraft = ""
+                               onSubmitFreeText: {
+                                   viewModel.submitFreeTextDraft()
                                })
         }
     }
@@ -366,7 +364,7 @@ private struct QuestionInputPanel: View {
     let onToggle: (String) -> Void
     let onOtherChange: (String) -> Void
     let onSubmitSelection: () -> Void
-    let onSubmitFreeText: (String) -> Void
+    let onSubmitFreeText: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -434,7 +432,8 @@ private struct QuestionInputPanel: View {
     private func submitFreeText() {
         let trimmed = freeText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        onSubmitFreeText(trimmed)
+        freeText = trimmed
+        onSubmitFreeText()
     }
 
     private struct OptionRow: View {

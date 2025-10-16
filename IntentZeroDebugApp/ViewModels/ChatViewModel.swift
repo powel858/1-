@@ -8,6 +8,7 @@ final class ChatViewModel: ObservableObject {
     @Published var isBusy: Bool = false
     @Published private(set) var session: InterviewSession? = nil
     @Published var hasCapturedInitialIdea: Bool = false
+    @Published var currentFreeText: String = ""
 
     private let pipeline = IntentPipeline()
     private var bootstraped = false
@@ -62,7 +63,14 @@ final class ChatViewModel: ObservableObject {
         startPipeline(with: trimmed)
     }
 
-    func submitFreeTextResponse(_ input: String) {
+    func submitFreeTextDraft() {
+        let trimmed = currentFreeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        submitFreeTextResponse(trimmed)
+        currentFreeText = ""
+    }
+
+    private func submitFreeTextResponse(_ input: String) {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
@@ -186,6 +194,7 @@ final class ChatViewModel: ObservableObject {
         currentSession.draftSelections[question.key] = []
         currentSession.draftOtherText[question.key] = ""
         session = currentSession
+        currentFreeText = ""
 
         if currentSession.isCompleted {
             finalizeInterview()
@@ -206,6 +215,7 @@ final class ChatViewModel: ObservableObject {
             finalizeInterview()
             return
         }
+        currentFreeText = ""
 
         let prompt = makeQuestionPrompt(for: question)
         appendAssistantMessage(prompt, questionKey: question.key)
@@ -370,6 +380,7 @@ final class ChatViewModel: ObservableObject {
 
     private func promptOptionalQuestionDecision() {
         awaitingOptionalDecision = true
+        currentFreeText = ""
         appendAssistantMessage("핵심 질문이 모두 완료됐어요. 지금 바로 '명세 생성'을 입력하면 결과를 받고, '계속'이라고 입력하면 심화 질문을 이어갈게요.")
     }
 
