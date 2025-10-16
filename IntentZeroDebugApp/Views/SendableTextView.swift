@@ -25,23 +25,22 @@ private struct SendableNSTextView: NSViewRepresentable {
     var isEnabled: Bool
     var onSubmit: () -> Void
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
     func makeNSView(context: Context) -> NSScrollView {
         let textView = CustomTextView()
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.drawsBackground = false
+        textView.usesAdaptiveColorMappingForDarkAppearance = true
+        textView.textContainerInset = NSSize(width: 4, height: 8)
+        textView.textContainer?.lineFragmentPadding = 4
         textView.font = NSFont.preferredFont(forTextStyle: .body)
         textView.allowsUndo = true
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
-        textView.textContainerInset = NSSize(width: 4, height: 8)
-        applyActiveAppearance(to: textView)
-        let coordinator = context.coordinator
-        textView.submitHandler = { [weak coordinator] in
+        Self.configureAppearance(for: textView, enabled: isEnabled)
+        textView.submitHandler = { [weak coordinator = context.coordinator] in
             coordinator?.handleSubmit()
         }
 
@@ -58,16 +57,11 @@ private struct SendableNSTextView: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = context.coordinator.textView else { return }
         if textView.string != text {
-            textView.string = text
+            textView.textStorage?.setAttributedString(NSAttributedString(string: text, attributes: Self.activeAttributes(for: textView, enabled: isEnabled)))
             textView.moveToEndOfDocument(nil)
         }
         textView.isEditable = isEnabled
-        if isEnabled {
-            applyActiveAppearance(to: textView)
-        } else {
-            applyDisabledAppearance(to: textView)
-        }
-        textView.isSelectable = true
+        Self.configureAppearance(for: textView, enabled: isEnabled)
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -78,10 +72,15 @@ private struct SendableNSTextView: NSViewRepresentable {
             self.parent = parent
         }
 
+        func textDidBeginEditing(_ notification: Notification) {
+            guard let textView = textView else { return }
+            SendableNSTextView.configureAppearance(for: textView, enabled: parent.isEnabled)
+        }
+
         func textDidChange(_ notification: Notification) {
             guard let textView = textView else { return }
             parent.text = textView.string
-            parent.applyActiveAppearance(to: textView)
+            SendableNSTextView.configureAppearance(for: textView, enabled: parent.isEnabled)
         }
 
         func handleSubmit() {
@@ -101,53 +100,39 @@ private struct SendableNSTextView: NSViewRepresentable {
             }
         }
 
+        override func mouseDown(with event: NSEvent) {
+            if window?.firstResponder != self {
+                window?.makeFirstResponder(self)
+            }
+            super.mouseDown(with: event)
+        }
+
         private func isReturn(_ event: NSEvent) -> Bool {
             guard event.keyCode == 36 else { return false }
             let modifiers = event.modifierFlags.intersection([.shift, .command, .option, .control])
-            if modifiers.isEmpty {
-                return true
-            }
-            if modifiers == [.shift] {
-                return false
-            }
-            return false
+            return modifiers.isEmpty
         }
     }
 
-    private func applyActiveAppearance(to textView: NSTextView) {
-        let color = NSColor.labelColor
-        let font = textView.font ?? NSFont.preferredFont(forTextStyle: .body)
-        textView.textColor = color
-        textView.insertionPointColor = color
-        textView.typingAttributes = [
-            .foregroundColor: color,
-            .font: font
-        ]
+    private static func configureAppearance(for textView: NSTextView, enabled: Bool) {
+        let attributes = activeAttributes(for: textView, enabled: enabled)
+        textView.textColor = attributes[.foregroundColor] as? NSColor
+        textView.insertionPointColor = textView.textColor ?? .white
+        textView.typingAttributes = attributes
+
         let length = textView.string.utf16.count
         if length > 0 {
-            textView.textStorage?.addAttributes([
-                .foregroundColor: color,
-                .font: font
-            ], range: NSRange(location: 0, length: length))
+            textView.textStorage?.setAttributes(attributes, range: NSRange(location: 0, length: length))
         }
     }
 
-    private func applyDisabledAppearance(to textView: NSTextView) {
-        let color = NSColor.secondaryLabelColor
+    private static func activeAttributes(for textView: NSTextView, enabled: Bool) -> [NSAttributedString.Key: Any] {
+        let color: NSColor = enabled ? .controlTextColor : .secondaryLabelColor
         let font = textView.font ?? NSFont.preferredFont(forTextStyle: .body)
-        textView.textColor = color
-        textView.insertionPointColor = color
-        textView.typingAttributes = [
+        return [
             .foregroundColor: color,
             .font: font
         ]
-        let length = textView.string.utf16.count
-        if length > 0 {
-            textView.textStorage?.addAttributes([
-                .foregroundColor: color,
-                .font: font
-            ], range: NSRange(location: 0, length: length))
-        }
     }
 }
 #else
@@ -156,9 +141,7 @@ private struct SendableUITextView: UIViewRepresentable {
     var isEnabled: Bool
     var onSubmit: () -> Void
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(parent: self)
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
@@ -169,28 +152,17 @@ private struct SendableUITextView: UIViewRepresentable {
         textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
         textView.keyboardDismissMode = .interactive
         textView.returnKeyType = .send
-        textView.textColor = .label
-        textView.tintColor = .label
-        textView.typingAttributes = [
-            .foregroundColor: UIColor.label,
-            .font: textView.font ?? UIFont.preferredFont(forTextStyle: .body)
-        ]
+        Self.configureAppearance(for: textView, enabled: isEnabled)
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         return textView
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
         if uiView.text != text {
-            uiView.text = text
+            uiView.attributedText = NSAttributedString(string: text, attributes: Self.activeAttributes(for: uiView, enabled: isEnabled))
         }
         uiView.isEditable = isEnabled
-        let color: UIColor = isEnabled ? .label : .secondaryLabel
-        uiView.textColor = color
-        uiView.tintColor = color
-        uiView.typingAttributes = [
-            .foregroundColor: color,
-            .font: uiView.font ?? UIFont.preferredFont(forTextStyle: .body)
-        ]
-        uiView.isSelectable = true
+        Self.configureAppearance(for: uiView, enabled: isEnabled)
     }
 
     final class Coordinator: NSObject, UITextViewDelegate {
@@ -200,8 +172,13 @@ private struct SendableUITextView: UIViewRepresentable {
             self.parent = parent
         }
 
+        func textViewDidBeginEditing(_ textView: UITextView) {
+            SendableUITextView.configureAppearance(for: textView, enabled: parent.isEnabled)
+        }
+
         func textViewDidChange(_ textView: UITextView) {
             parent.text = textView.text
+            SendableUITextView.configureAppearance(for: textView, enabled: parent.isEnabled)
         }
 
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText replacement: String) -> Bool {
@@ -212,6 +189,22 @@ private struct SendableUITextView: UIViewRepresentable {
             }
             return true
         }
+    }
+
+    private static func configureAppearance(for textView: UITextView, enabled: Bool) {
+        let attrs = activeAttributes(for: textView, enabled: enabled)
+        textView.textColor = attrs[.foregroundColor] as? UIColor
+        textView.tintColor = textView.textColor
+        textView.typingAttributes = attrs
+    }
+
+    private static func activeAttributes(for textView: UITextView, enabled: Bool) -> [NSAttributedString.Key: Any] {
+        let color: UIColor = enabled ? .label : .secondaryLabel
+        let font = textView.font ?? UIFont.preferredFont(forTextStyle: .body)
+        return [
+            .foregroundColor: color,
+            .font: font
+        ]
     }
 }
 #endif

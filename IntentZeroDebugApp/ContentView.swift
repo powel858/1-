@@ -7,29 +7,42 @@ import UIKit
 
 struct ContentView: View {
     @EnvironmentObject private var viewModel: ChatViewModel
-    @State private var input: String = ""
+    @State private var initialIdeaDraft: String = ""
+    @State private var freeTextDraft: String = ""
     @State private var selectedMilestoneKey: String?
-    @State private var editingQuestionKey: String?
     @State private var pendingScrollTarget: UUID?
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-            Divider()
-            chatArea
+        Group {
+            if viewModel.hasCapturedInitialIdea {
+                mainInterviewLayout
+            } else {
+                InitialIdeaCaptureView(draft: $initialIdeaDraft,
+                                       isBusy: viewModel.isBusy,
+                                       onSubmit: { idea in
+                                           viewModel.captureInitialIdea(idea)
+                                           initialIdeaDraft = ""
+                                       })
+            }
         }
         .frame(minWidth: 840, minHeight: 520)
-        .onAppear {
-            viewModel.bootstrapIfNeeded()
-        }
+        .onAppear { viewModel.bootstrapIfNeeded() }
         .onChange(of: viewModel.session?.currentQuestion?.key) { key in
-            guard editingQuestionKey == nil else { return }
             selectedMilestoneKey = key
+            freeTextDraft = ""
         }
         .onChange(of: viewModel.milestones.count) { count in
             if count == 0 {
                 selectedMilestoneKey = nil
             }
+        }
+    }
+
+    private var mainInterviewLayout: some View {
+        HStack(spacing: 0) {
+            sidebar
+            Divider()
+            chatArea
         }
     }
 
@@ -189,7 +202,7 @@ struct ContentView: View {
 
     private func milestoneTitle(for milestone: QuestionMilestone) -> String {
         let condensed = milestone.title.replacingOccurrences(of: "\n", with: " ")
-        if let range = condensed.range(of: "예:") {
+        if let range = condensed.range(of: "예:" ) {
             let prefix = condensed[..<range.lowerBound]
             let value = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
             return value.isEmpty ? condensed : value
@@ -263,7 +276,18 @@ struct ContentView: View {
                 }
             }
             Divider()
-            inputBar
+                QuestionInputPanel(state: viewModel.currentQuestionState,
+                                   freeText: $freeTextDraft,
+                                   isBusy: viewModel.isBusy,
+                                   onToggle: { viewModel.toggleCurrentOption($0) },
+                                   onOtherChange: { viewModel.updateCurrentOtherText($0) },
+                               onSubmitSelection: {
+                                   viewModel.submitCurrentSelection()
+                               },
+                               onSubmitFreeText: {
+                                   viewModel.submitFreeTextResponse(freeTextDraft)
+                                   freeTextDraft = ""
+                               })
         }
     }
 
@@ -287,95 +311,152 @@ struct ContentView: View {
         .padding()
     }
 
-    private var inputBar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let editingKey = editingQuestionKey,
-               let milestone = viewModel.milestones.first(where: { $0.id == editingKey }) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("답변 수정 중 • 질문 \(milestone.index + 1)")
-                        .font(.caption)
-                        .foregroundColor(.accentColor)
-                    Spacer()
-                    Button("취소") {
-                        cancelEditing()
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-
-            HStack(spacing: 12) {
-                SendableTextView(text: $input, isEnabled: !viewModel.isBusy, onSubmit: submitFromKeyboard)
-                    .frame(minHeight: 70)
-                    .background(Color.clear)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2)))
-
-                VStack(spacing: 8) {
-                    Button(action: submit) {
-                        Label(editingQuestionKey == nil ? "보내기" : "수정",
-                              systemImage: editingQuestionKey == nil ? "paperplane.fill" : "pencil.circle.fill")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.isBusy || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                    Button(action: {
-                        cancelEditing()
-                        selectedMilestoneKey = nil
-                        pendingScrollTarget = nil
-                        viewModel.resetConversation()
-                    }) {
-                        Label("초기화", systemImage: "arrow.clockwise")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(viewModel.isBusy)
-                }
-            }
-        }
-        .padding()
-    }
-
-    private func cancelEditing() {
-        editingQuestionKey = nil
-        input = ""
-    }
-
     private func handleMilestoneSelection(_ milestone: QuestionMilestone) {
         guard milestone.status != .pending else { return }
-        let wasEditing = editingQuestionKey != nil
         selectedMilestoneKey = milestone.id
-        if milestone.status == .answered, let answer = milestone.answer {
-            editingQuestionKey = milestone.id
-            input = answer
-        } else {
-            if wasEditing {
-                input = ""
-            }
-            editingQuestionKey = nil
-        }
 
         if let target = viewModel.messageID(forQuestionKey: milestone.id) {
             pendingScrollTarget = target
         }
     }
+}
+
+private struct InitialIdeaCaptureView: View {
+    @Binding var draft: String
+    let isBusy: Bool
+    let onSubmit: (String) -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            VStack(spacing: 12) {
+                Text("아이디어 한 줄을 입력해보세요!")
+                    .font(.title2).bold()
+                Text("처음 아이디어를 입력하면 인터뷰가 시작됩니다.")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+            }
+            TextField("예: 외국인과 대화할 때 도와줄 번역 앱", text: $draft)
+                .textFieldStyle(.roundedBorder)
+                .font(.title3)
+                .frame(maxWidth: 480)
+                .disabled(isBusy)
+                .onSubmit(submit)
+            Button(action: submit) {
+                Label("시작하기", systemImage: "paperplane.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isBusy || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Spacer()
+        }
+        .padding()
+    }
 
     private func submit() {
-        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        onSubmit(trimmed)
+    }
+}
 
-        let editingKey = editingQuestionKey
-        input = ""
-        viewModel.process(userInput: text, editingQuestionKey: editingKey)
+private struct QuestionInputPanel: View {
+    let state: QuestionInputState?
+    @Binding var freeText: String
+    let isBusy: Bool
+    let onToggle: (String) -> Void
+    let onOtherChange: (String) -> Void
+    let onSubmitSelection: () -> Void
+    let onSubmitFreeText: () -> Void
 
-        if editingKey != nil {
-            if let key = editingKey,
-               let target = viewModel.messageID(forQuestionKey: key) {
-                pendingScrollTarget = target
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let state {
+                switch state.question.inputKind {
+                case .freeText:
+                    freeTextArea
+                case .multiSelect, .multiSelectWithOther:
+                    selectionArea(state: state)
+                }
+            } else {
+                freeTextArea
             }
-            editingQuestionKey = nil
+        }
+        .padding()
+    }
+
+    private var freeTextArea: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SendableTextView(text: $freeText, isEnabled: !isBusy, onSubmit: onSubmitFreeText)
+                .frame(minHeight: 70)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2)))
+            HStack {
+                Spacer()
+                Button(action: {
+                    onSubmitFreeText()
+                }) {
+                    Label("보내기", systemImage: "paperplane.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isBusy || freeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
         }
     }
 
-    private func submitFromKeyboard() {
-        submit()
+    private func selectionArea(state: QuestionInputState) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(state.question.options) { option in
+                        OptionRow(option: option,
+                                  isSelected: state.selectedOptionIDs.contains(option.id),
+                                  onTap: { onToggle(option.id) })
+                    }
+                }
+            }
+            .frame(minHeight: 120, maxHeight: 220)
+
+            if state.question.allowsOtherEntry {
+                TextField("기타 의견을 입력하세요", text: Binding(get: { state.otherText }, set: onOtherChange))
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            HStack {
+                Spacer()
+                Button(action: onSubmitSelection) {
+                    Label("선택 완료", systemImage: "checkmark.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isBusy || !state.canSubmit)
+            }
+        }
+    }
+
+    private struct OptionRow: View {
+        let option: QuestionOption
+        let isSelected: Bool
+        let onTap: () -> Void
+
+        var body: some View {
+            Button(action: onTap) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(option.title)
+                            .font(.body)
+                        if let detail = option.detail, !detail.isEmpty {
+                            Text(detail)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 8).stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.2)))
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 

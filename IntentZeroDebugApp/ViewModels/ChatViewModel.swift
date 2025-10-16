@@ -7,6 +7,7 @@ final class ChatViewModel: ObservableObject {
     @Published var pipelinePhase: PipelinePhase? = nil
     @Published var isBusy: Bool = false
     @Published private(set) var session: InterviewSession? = nil
+    @Published var hasCapturedInitialIdea: Bool = false
 
     private let pipeline = IntentPipeline()
     private var bootstraped = false
@@ -18,6 +19,9 @@ final class ChatViewModel: ObservableObject {
     private var awaitingOptionalDecision: Bool = false
 
     var headerStatus: String {
+        if !hasCapturedInitialIdea {
+            return "아이디어를 입력해 주세요."
+        }
         if isBusy {
             return "작업 중…"
         }
@@ -30,14 +34,36 @@ final class ChatViewModel: ObservableObject {
         return "아이디어를 입력하면 인터뷰가 시작됩니다."
     }
 
+    var currentQuestionState: QuestionInputState? {
+        guard !awaitingOptionalDecision,
+              let session = session,
+              let question = session.currentQuestion else { return nil }
+        guard question.inputKind != .freeText else { return nil }
+        let selections = session.draftSelections[question.key] ?? []
+        let other = session.draftOtherText[question.key] ?? ""
+        return QuestionInputState(question: question,
+                                  selectedOptionIDs: selections,
+                                  otherText: other)
+    }
+
     func bootstrapIfNeeded() {
         guard !bootstraped else { return }
         bootstraped = true
         messages.append(ChatMessage(role: .system, text: "안녕하세요! 만들고 싶은 제품 아이디어를 한 줄로 적어주세요."))
     }
 
-    func process(userInput: String, editingQuestionKey: String? = nil) {
-        let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
+    func captureInitialIdea(_ input: String) {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        resetIfNeededForNewIdea()
+        hasCapturedInitialIdea = true
+        initialIdea = trimmed
+        appendUserMessage(trimmed, questionKey: nil)
+        startPipeline(with: trimmed)
+    }
+
+    func submitFreeTextResponse(_ input: String) {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         if awaitingOptionalDecision {
@@ -46,20 +72,59 @@ final class ChatViewModel: ObservableObject {
             return
         }
 
-        if let editingKey = editingQuestionKey {
-            updateAnswer(for: editingKey, to: trimmed)
+        guard let session = session, let question = session.currentQuestion else {
+            // Fallback: treat as initial idea if 인터뷰가 시작되지 않은 경우
+            captureInitialIdea(trimmed)
             return
         }
 
-        let activeQuestionKey = session?.currentQuestion?.key
-        appendUserMessage(trimmed, questionKey: activeQuestionKey)
+        appendUserMessage(trimmed, questionKey: question.key)
+        handleAnswer(trimmed)
+    }
 
-        if session == nil {
-            initialIdea = trimmed
-            startPipeline(with: trimmed)
+    func toggleCurrentOption(_ optionID: String) {
+        guard var currentSession = session,
+              let question = currentSession.currentQuestion,
+              question.inputKind != .freeText else { return }
+
+        var selections = currentSession.draftSelections[question.key] ?? []
+        if selections.contains(optionID) {
+            selections.remove(optionID)
         } else {
-            handleAnswer(trimmed)
+            if question.allowsMultipleSelection {
+                selections.insert(optionID)
+            } else {
+                selections = Set([optionID])
+            }
         }
+        currentSession.draftSelections[question.key] = selections
+        session = currentSession
+    }
+
+    func updateCurrentOtherText(_ text: String) {
+        guard var currentSession = session,
+              let question = currentSession.currentQuestion,
+              question.inputKind != .freeText,
+              question.allowsOtherEntry else { return }
+        currentSession.draftOtherText[question.key] = text
+        session = currentSession
+    }
+
+    func submitCurrentSelection() {
+        guard var currentSession = session,
+              let question = currentSession.currentQuestion,
+              question.inputKind != .freeText else { return }
+
+        let selections = currentSession.draftSelections[question.key] ?? []
+        let other = (currentSession.draftOtherText[question.key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if selections.isEmpty && other.isEmpty { return }
+
+        let summary = formattedSelectionResponse(for: question, selections: selections, otherText: other)
+        appendUserMessage(summary, questionKey: question.key)
+        currentSession.draftSelections[question.key] = []
+        currentSession.draftOtherText[question.key] = ""
+        session = currentSession
+        handleAnswer(summary)
     }
 
     func resetConversation() {
@@ -71,8 +136,15 @@ final class ChatViewModel: ObservableObject {
         questionMessageIDs.removeAll()
         answerMessageIDs.removeAll()
         awaitingOptionalDecision = false
+        hasCapturedInitialIdea = false
         bootstraped = false
         bootstrapIfNeeded()
+    }
+
+    private func resetIfNeededForNewIdea() {
+        if hasCapturedInitialIdea {
+            resetConversation()
+        }
     }
 
     private func startPipeline(with idea: String) {
@@ -84,10 +156,10 @@ final class ChatViewModel: ObservableObject {
                 self.pipelinePhase = .interview
             }
             do {
-                let defaultDetection = DomainDetectionResult(domain: "generic", confidence: 0, scores: [:])
-                let interview = try pipeline.startInterview(for: defaultDetection)
+                let detection = DomainDetectionResult(domain: "generic", confidence: 0, scores: [:])
+                let interview = try pipeline.startInterview(for: detection)
                 await MainActor.run {
-                    self.detection = defaultDetection
+                    self.detection = detection
                     self.session = interview
                     self.askNextQuestion()
                 }
@@ -105,12 +177,14 @@ final class ChatViewModel: ObservableObject {
 
     private func handleAnswer(_ answer: String) {
         guard var currentSession = session else { return }
-        guard currentSession.currentQuestion != nil else {
+        guard let question = currentSession.currentQuestion else {
             appendPipelineMessage("추가 질문은 없습니다. 새로운 아이디어를 입력하려면 '초기화'를 눌러주세요.")
             return
         }
 
         currentSession.recordAnswer(answer)
+        currentSession.draftSelections[question.key] = []
+        currentSession.draftOtherText[question.key] = ""
         session = currentSession
 
         if currentSession.isCompleted {
@@ -202,34 +276,33 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
-    private func updateAnswer(for questionKey: String, to newText: String) {
-        guard var currentSession = session else { return }
-        guard currentSession.questions.contains(where: { $0.key == questionKey }) else { return }
-        currentSession.updateAnswer(newText, for: questionKey)
-        session = currentSession
-
-        if let messageID = answerMessageIDs[questionKey],
-           let index = messages.firstIndex(where: { $0.id == messageID }) {
-            messages[index].text = newText
-        } else {
-            appendUserMessage(newText, questionKey: questionKey)
-        }
-    }
-
     private func makeQuestionPrompt(for question: InterviewQuestion) -> String {
-        let promptText = sanitizedQuestionText(for: question)
-        var components: [String] = [promptText]
+        var components: [String] = [question.text]
         if let hint = question.hint, !hint.isEmpty {
             components.append("힌트: \(hint)")
         }
-        if let ideaExample = exampleLine(for: question) {
-            components.append(ideaExample)
+
+        if !question.options.isEmpty {
+            let examples = question.options.map { option -> String in
+                if let detail = option.detail, !detail.isEmpty {
+                    return "• \(option.title) — \(detail)"
+                }
+                return "• \(option.title)"
+            }.joined(separator: "\n")
+            components.append("예시 답변:\n\(examples)")
+            if question.allowsOtherEntry {
+                components.append("필요하면 '기타' 항목에 자유롭게 입력해 주세요.")
+            }
+        } else if let example = exampleLine(for: question) {
+            components.append(example)
         }
+
         components.append("추가적인 부연 설명을 해드릴까요?")
         return components.joined(separator: "\n")
     }
 
     private func exampleLine(for question: InterviewQuestion) -> String? {
+        guard question.options.isEmpty else { return nil }
         if let idea = initialIdea, !idea.isEmpty {
             return generateIdeaSpecificExample(for: question, idea: idea)
         }
@@ -249,15 +322,15 @@ final class ChatViewModel: ObservableObject {
         case "project_name":
             let name = suggestedName(from: idea)
             return "예시: \"\(name)\" — \(snippet)에 바로 떠오르는 이름"
-        case "one_liner":
-            return "예시: \(snippet)을 한 문장으로 요약하면 \"\(snippet) 이용자를 위한 즉시 통역 도우미\"처럼 표현할 수 있어요."
-        case "main_pain":
-            return "예시: \(snippet) 상황에서 겪는 대표적인 불편 한 가지를 구체적으로 적어보세요."
+        case "job1_when":
+            return "예시: \(snippet) 상황에서 통역이 급히 필요했던 순간"
+        case "core_value":
+            return "예시: \(snippet) 사용자에게 즉각적인 의사소통 자신감을 줍니다."
         default:
             if let defaultAnswer = question.defaultAnswer, !defaultAnswer.isEmpty {
                 return "예시: \(defaultAnswer) — \(snippet)을(를) 염두에 둔 답변"
             } else if let example = question.example, !example.isEmpty {
-                return "\(snippet)을(를) 떠올리며 \(example)"
+                return "예시: \(example)"
             } else {
                 return "\"\(snippet)\" 맥락을 떠올리며 구체적으로 설명해보세요."
             }
@@ -295,16 +368,6 @@ final class ChatViewModel: ObservableObject {
         return cleaned + "Talk"
     }
 
-    private func sanitizedQuestionText(for question: InterviewQuestion) -> String {
-        var text = question.text.replacingOccurrences(of: "\n", with: " ")
-        if let range = text.range(of: "예:" ) {
-            text = String(text[..<range.lowerBound])
-        } else if let range = text.range(of: "예시:" ) {
-            text = String(text[..<range.lowerBound])
-        }
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private func promptOptionalQuestionDecision() {
         awaitingOptionalDecision = true
         appendAssistantMessage("핵심 질문이 모두 완료됐어요. 지금 바로 '명세 생성'을 입력하면 결과를 받고, '계속'이라고 입력하면 심화 질문을 이어갈게요.")
@@ -327,6 +390,17 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    private func formattedSelectionResponse(for question: InterviewQuestion, selections: Set<String>, otherText: String) -> String {
+        var components: [String] = []
+        for option in question.options where selections.contains(option.id) {
+            components.append(option.title)
+        }
+        if !otherText.isEmpty {
+            components.append("기타: \(otherText)")
+        }
+        return components.joined(separator: ", ")
+    }
+
     private func appendAssistantMessage(_ text: String, questionKey: String? = nil) {
         let message = ChatMessage(role: .assistant, text: text, questionKey: questionKey)
         messages.append(message)
@@ -337,6 +411,23 @@ final class ChatViewModel: ObservableObject {
 
     private func appendPipelineMessage(_ text: String) {
         messages.append(ChatMessage(role: .pipeline("파이프라인"), text: text))
+    }
+}
+
+struct QuestionInputState {
+    let question: InterviewQuestion
+    let selectedOptionIDs: Set<String>
+    let otherText: String
+
+    var canSubmit: Bool {
+        switch question.inputKind {
+        case .freeText:
+            return true
+        case .multiSelect, .multiSelectWithOther:
+            let hasSelection = !selectedOptionIDs.isEmpty
+            let hasOther = !otherText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return hasSelection || hasOther
+        }
     }
 }
 
