@@ -276,16 +276,16 @@ struct ContentView: View {
                 }
             }
             Divider()
-                QuestionInputPanel(state: viewModel.currentQuestionState,
-                                   freeText: $freeTextDraft,
-                                   isBusy: viewModel.isBusy,
-                                   onToggle: { viewModel.toggleCurrentOption($0) },
-                                   onOtherChange: { viewModel.updateCurrentOtherText($0) },
+            QuestionInputPanel(state: viewModel.currentQuestionState,
+                               freeText: $freeTextDraft,
+                               isBusy: viewModel.isBusy,
+                               onToggle: { viewModel.toggleCurrentOption($0) },
+                               onOtherChange: { viewModel.updateCurrentOtherText($0) },
                                onSubmitSelection: {
                                    viewModel.submitCurrentSelection()
                                },
-                               onSubmitFreeText: {
-                                   viewModel.submitFreeTextResponse(freeTextDraft)
+                               onSubmitFreeText: { text in
+                                   viewModel.submitFreeTextResponse(text)
                                    freeTextDraft = ""
                                })
         }
@@ -366,7 +366,7 @@ private struct QuestionInputPanel: View {
     let onToggle: (String) -> Void
     let onOtherChange: (String) -> Void
     let onSubmitSelection: () -> Void
-    let onSubmitFreeText: () -> Void
+    let onSubmitFreeText: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -386,13 +386,13 @@ private struct QuestionInputPanel: View {
 
     private var freeTextArea: some View {
         VStack(alignment: .leading, spacing: 8) {
-            SendableTextView(text: $freeText, isEnabled: !isBusy, onSubmit: onSubmitFreeText)
+            SendableTextView(text: $freeText, isEnabled: !isBusy, onSubmit: submitFreeText)
                 .frame(minHeight: 70)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2)))
             HStack {
                 Spacer()
                 Button(action: {
-                    onSubmitFreeText()
+                    submitFreeText()
                 }) {
                     Label("보내기", systemImage: "paperplane.fill")
                 }
@@ -429,6 +429,12 @@ private struct QuestionInputPanel: View {
                 .disabled(isBusy || !state.canSubmit)
             }
         }
+    }
+
+    private func submitFreeText() {
+        let trimmed = freeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        onSubmitFreeText(trimmed)
     }
 
     private struct OptionRow: View {
